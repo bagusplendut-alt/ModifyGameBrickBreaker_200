@@ -16,6 +16,7 @@ class GameObject(object):
         self.canvas.delete(self.item)
 
 
+#merubah pada bagian bola dengan earna oranye kuning merah dan memberikan efek api
 class Ball(GameObject):
     # warna ekor api: dari kuning terang -> merah -> gelap
     TRAIL_COLORS = ["#ffee55", "#ffc233", "#ff9922", "#ff6611",
@@ -201,10 +202,17 @@ class Game(tk.Frame):
         self.ball = None
         self.paddle = Paddle(self.canvas, self.width / 2, 326)
         self.items[self.paddle.item] = self.paddle
-        for x in range(5, self.width - 5, 75):
-            self.add_brick(x + 37.5, 50, 2)
-            self.add_brick(x + 37.5, 70, 1)
-            self.add_brick(x + 37.5, 90, 1)
+        rows = 7  # jumlah baris balok, ubah sesuai selera
+        for row in range(rows):
+            y = 50 + row * 20
+            if row == 0:
+                hits = 3      # hitam, 3x pukul
+            elif row < 3:
+                hits = 2      # biru, 2x pukul
+            else:
+                hits = 1      # merah, 1x pukul
+            for x in range(5, self.width - 5, 75):
+                self.add_brick(x + 37.5, y, hits)
 
         self.hud = None
         self.setup_game()
