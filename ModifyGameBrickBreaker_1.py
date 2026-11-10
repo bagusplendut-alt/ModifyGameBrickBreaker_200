@@ -27,7 +27,7 @@ class Ball(GameObject):
     def __init__(self, canvas, x, y):
         self.radius = 10
         self.direction = [1, -1]
-        self.speed = 14
+        self.speed = 7
         self.trail = []
 
         # lapisan luar bola api
@@ -124,7 +124,10 @@ class Ball(GameObject):
             elif x < coords[0]:
                 self.direction[0] = -1
             else:
-                self.direction[1] *= -1
+                if isinstance(game_object, Paddle):
+                    self.direction[1] = -1   # paddle selalu memantulkan ke atas
+                else:
+                    self.direction[1] *= -1
 
         for game_object in game_objects:
             if isinstance(game_object, Brick):
@@ -144,8 +147,6 @@ class Paddle(GameObject):
             fill="yellow",
         )
         super(Paddle, self).__init__(canvas, item)
-        self.canvas.bind("<Left>", lambda _: self.paddle.move(-25))
-        self.canvas.bind("<Right>", lambda _: self.paddle.move(25))
 
     def set_ball(self, ball):
         self.ball = ball
@@ -219,8 +220,8 @@ class Game(tk.Frame):
         self.hud = None
         self.setup_game()
         self.canvas.focus_set()
-        self.canvas.bind("<Left>", lambda _: self.paddle.move(-10))
-        self.canvas.bind("<Right>", lambda _: self.paddle.move(10))
+        self.canvas.bind("<Left>", lambda _: self.paddle.move(-20))
+        self.canvas.bind("<Right>", lambda _: self.paddle.move(20))
 
     def setup_game(self):
         self.add_ball()
@@ -272,17 +273,17 @@ class Game(tk.Frame):
                 self.after(1000, self.setup_game)
         else:
             self.ball.update()
-            self.after(50, self.game_loop)
+            self.after(20, self.game_loop)
 
     def check_collisions(self):
         ball_coords = self.ball.get_position()
         items = self.canvas.find_overlapping(*ball_coords)
         objects = [self.items[x] for x in items if x in self.items]
-        self.after(30, self.game_loop)
+        self.ball.collide(objects)
 
 
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("Hello, Jarvis!")
     game = Game(root)
-    game.mainloop() 
+    game.mainloop()
