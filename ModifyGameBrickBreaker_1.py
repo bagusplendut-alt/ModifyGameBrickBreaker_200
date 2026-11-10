@@ -278,7 +278,7 @@ class Game(tk.Frame):
         ball_coords = self.ball.get_position()
         items = self.canvas.find_overlapping(*ball_coords)
         objects = [self.items[x] for x in items if x in self.items]
-        self.ball.collide(objects)
+        self.after(30, self.game_loop)
 
 
 if __name__ == "__main__":
