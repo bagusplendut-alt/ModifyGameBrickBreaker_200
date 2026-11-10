@@ -27,7 +27,7 @@ class Ball(GameObject):
     def __init__(self, canvas, x, y):
         self.radius = 10
         self.direction = [1, -1]
-        self.speed = 10
+        self.speed = 14
         self.trail = []
 
         # lapisan luar bola api
@@ -211,7 +211,7 @@ class Game(tk.Frame):
                 hits = 2      # biru, 2x pukul
             else:
                 hits = 1      # merah, 1x pukul
-            for x in range(5, self.width - 5, 75):
+            for x in range(5, self.width - 5, 75): 
                 self.add_brick(x + 37.5, y, hits)
 
         self.hud = None
