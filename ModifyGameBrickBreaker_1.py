@@ -144,6 +144,8 @@ class Paddle(GameObject):
             fill="yellow",
         )
         super(Paddle, self).__init__(canvas, item)
+        self.canvas.bind("<Left>", lambda _: self.paddle.move(-25))
+        self.canvas.bind("<Right>", lambda _: self.paddle.move(25))
 
     def set_ball(self, ball):
         self.ball = ball
