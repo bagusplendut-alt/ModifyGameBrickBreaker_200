@@ -1,6 +1,10 @@
+# tkinter untuk jendela/gambar, random untuk efek api berkedip
 import tkinter as tk
 import random
 
+
+# Kelas dasar semua objek game: simpan kanvas + ID gambar,
+# ambil posisi, geser, dan hapus.
 class GameObject(object):
     def __init__(self, canvas, item):
         self.canvas = canvas
@@ -17,6 +21,7 @@ class GameObject(object):
 
 
 #merubah pada bagian bola dengan earna oranye kuning merah dan memberikan efek api
+# Bola api: lapisan luar berkedip, inti berlapis, ekor api memudar.
 class Ball(GameObject):
     # warna ekor api: dari kuning terang -> merah -> gelap
     TRAIL_COLORS = ["#ffee55", "#ffc233", "#ff9922", "#ff6611",
@@ -24,6 +29,8 @@ class Ball(GameObject):
     # warna tepi bola yang berkedip
     FLICKER = ["#ff3300", "#ff4400", "#ff5500", "#ff2200"]
 
+    # Atur radius, arah [horizontal, vertikal], kecepatan, dan gambar bola
+    # (1 lapisan luar + 3 lapisan inti).
     def __init__(self, canvas, x, y):
         self.radius = 10
         self.direction = [1, -1]
@@ -51,12 +58,14 @@ class Ball(GameObject):
         ]
         super(Ball, self).__init__(canvas, item)
 
+    # Geser lapisan luar dan semua lapisan inti bersamaan.
     def move(self, x, y):
         # gerakkan lapisan luar dan semua lapisan dalam
         super(Ball, self).move(x, y)
         for part in self.inner_parts:
             self.canvas.move(part, x, y)
 
+    # Hapus bola beserta inti dan ekornya.
     def delete(self):
         super(Ball, self).delete()
         for part in self.inner_parts:
@@ -65,6 +74,7 @@ class Ball(GameObject):
             self.canvas.delete(item)
         self.trail = []
 
+    # Tambah satu percikan api di posisi bola (di belakang bola).
     def add_trail(self):
         # tambah satu "percikan api" di posisi bola saat ini
         coords = self.get_position()
@@ -78,6 +88,7 @@ class Ball(GameObject):
         self.canvas.tag_lower(t, self.item)  # taruh di belakang bola
         self.trail.append([t, 0])
 
+    # Tiap frame: percikan makin tua, mengecil, berubah warna, lalu hilang.
     def fade_trail(self):
         # kecilkan dan ubah warna percikan api seiring waktu
         for entry in self.trail[:]:
@@ -94,6 +105,7 @@ class Ball(GameObject):
                 self.canvas.coords(item, cx - r, cy - r, cx + r, cy + r)
                 self.canvas.itemconfig(item, fill=self.TRAIL_COLORS[age])
 
+    # Tiap frame: pantul di dinding, update ekor, gerakkan bola, ganti warna acak.
     def update(self):
         coords = self.get_position()
         width = self.canvas.winfo_width()
@@ -111,6 +123,8 @@ class Ball(GameObject):
         # efek api berkedip
         self.canvas.itemconfig(self.item, fill=random.choice(self.FLICKER))
 
+    # Tentukan arah pantulan saat menabrak objek; paddle selalu memantul ke atas;
+    # balok yang kena dipanggil hit().
     def collide(self, game_objects):
         coords = self.get_position()
         x = (coords[0] + coords[2]) * 0.5
@@ -134,6 +148,7 @@ class Ball(GameObject):
                 game_object.hit()
 
 
+# Papan pemukul kuning 80x10.
 class Paddle(GameObject):
     def __init__(self, canvas, x, y):
         self.width = 80
@@ -148,9 +163,11 @@ class Paddle(GameObject):
         )
         super(Paddle, self).__init__(canvas, item)
 
+    # Simpan bola yang menempel di paddle.
     def set_ball(self, ball):
         self.ball = ball
 
+    # Geser paddle (tidak boleh keluar kanvas); bola yang menempel ikut bergeser.
     def move(self, offset):
         coords = self.get_position()
         width = self.canvas.winfo_width()
@@ -160,6 +177,7 @@ class Paddle(GameObject):
                 self.ball.move(offset, 0)
 
 
+# Balok 75x20. Warna menunjukkan kekuatan: 1 merah, 2 biru, 3 hitam.
 class Brick(GameObject):
     COLORS = {1: "#e74c3c", 2: "#3498db", 3: "#222222"}
 
@@ -178,6 +196,7 @@ class Brick(GameObject):
         )
         super(Brick, self).__init__(canvas, item)
 
+    # Kena pukul: kekuatan berkurang; jika 0 balok hilang, jika tidak warnanya turun level.
     def hit(self):
         self.hits -= 1
         if self.hits == 0:
@@ -186,7 +205,9 @@ class Brick(GameObject):
             self.canvas.itemconfig(self.item, fill=Brick.COLORS[self.hits])
 
 
+# Pengatur permainan (sebuah tk.Frame).
 class Game(tk.Frame):
+    # Buat kanvas 610x400, paddle, 7 baris balok, lalu pasang kontrol tombol panah.
     def __init__(self, master):
         super(Game, self).__init__(master)
         self.lives = 3
@@ -223,12 +244,14 @@ class Game(tk.Frame):
         self.canvas.bind("<Left>", lambda _: self.paddle.move(-20))
         self.canvas.bind("<Right>", lambda _: self.paddle.move(20))
 
+    # Siapkan bola, teks nyawa, dan teks "Press Space to start".
     def setup_game(self):
         self.add_ball()
         self.update_lives_text()
         self.text = self.draw_text(300, 200, "Press Space to start")
         self.canvas.bind("<space>", lambda _: self.start_game())
 
+    # Ganti bola lama dengan bola baru di atas paddle.
     def add_ball(self):
         if self.ball is not None:
             self.ball.delete()
@@ -237,14 +260,17 @@ class Game(tk.Frame):
         self.ball = Ball(self.canvas, x, 310)
         self.paddle.set_ball(self.ball)
 
+    # Buat satu balok dan daftarkan ke self.items.
     def add_brick(self, x, y, hits):
         brick = Brick(self.canvas, x, y, hits)
         self.items[brick.item] = brick
 
+    # Tulis teks di kanvas.
     def draw_text(self, x, y, text, size="40"):
         font = ("Forte", size)
         return self.canvas.create_text(x, y, text=text, font=font)
 
+    # Tampilkan/perbarui teks "Lives".
     def update_lives_text(self):
         text = "Lives: %s" % self.lives
         if self.hud is None:
@@ -252,12 +278,16 @@ class Game(tk.Frame):
         else:
             self.canvas.itemconfig(self.hud, text=text)
 
+    # Mulai game: hapus teks awal, lepas bola dari paddle, jalankan loop.
     def start_game(self):
         self.canvas.unbind("<space>")
         self.canvas.delete(self.text)
         self.paddle.ball = None
         self.game_loop()
 
+    # Loop utama tiap 20 ms: cek tabrakan, menang jika balok habis,
+    # kurangi nyawa jika bola jatuh, selain itu gerakkan bola.
+    # (Catatan: "lives < 0" membuat pemain punya 4 kesempatan.)
     def game_loop(self):
         self.check_collisions()
         num_bricks = len(self.canvas.find_withtag("brick"))
@@ -275,6 +305,7 @@ class Game(tk.Frame):
             self.ball.update()
             self.after(20, self.game_loop)
 
+    # Cari objek yang bersentuhan dengan bola lalu serahkan ke ball.collide().
     def check_collisions(self):
         ball_coords = self.ball.get_position()
         items = self.canvas.find_overlapping(*ball_coords)
@@ -282,6 +313,7 @@ class Game(tk.Frame):
         self.ball.collide(objects)
 
 
+# Program utama: buat jendela, jalankan game, dan jaga jendela tetap terbuka.
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("Hello, Jarvis!")
