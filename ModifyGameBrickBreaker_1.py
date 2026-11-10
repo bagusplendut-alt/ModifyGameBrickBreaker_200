@@ -1,5 +1,5 @@
 import tkinter as tk
-
+import random
 
 class GameObject(object):
     def __init__(self, canvas, item):
@@ -17,18 +17,81 @@ class GameObject(object):
 
 
 class Ball(GameObject):
+    # warna ekor api: dari kuning terang -> merah -> gelap
+    TRAIL_COLORS = ["#ffee55", "#ffc233", "#ff9922", "#ff6611",
+                    "#dd3300", "#992200", "#661100"]
+    # warna tepi bola yang berkedip
+    FLICKER = ["#ff3300", "#ff4400", "#ff5500", "#ff2200"]
+
     def __init__(self, canvas, x, y):
         self.radius = 10
         self.direction = [1, -1]
         self.speed = 10
+        self.trail = []
+
+        # lapisan luar bola api
         item = canvas.create_oval(
             x - self.radius,
             y - self.radius,
             x + self.radius,
             y + self.radius,
-            fill="white",
+            fill="#ff3300",
+            outline="#ff9900",
+            width=2,
         )
+        # lapisan dalam: oranye, kuning, putih (inti api)
+        self.inner_parts = [
+            canvas.create_oval(x - 7, y - 7, x + 7, y + 7,
+                               fill="#ff9900", outline=""),
+            canvas.create_oval(x - 4, y - 4, x + 4, y + 4,
+                               fill="#ffdd33", outline=""),
+            canvas.create_oval(x - 2, y - 2, x + 2, y + 2,
+                               fill="#ffffff", outline=""),
+        ]
         super(Ball, self).__init__(canvas, item)
+
+    def move(self, x, y):
+        # gerakkan lapisan luar dan semua lapisan dalam
+        super(Ball, self).move(x, y)
+        for part in self.inner_parts:
+            self.canvas.move(part, x, y)
+
+    def delete(self):
+        super(Ball, self).delete()
+        for part in self.inner_parts:
+            self.canvas.delete(part)
+        for item, _ in self.trail:
+            self.canvas.delete(item)
+        self.trail = []
+
+    def add_trail(self):
+        # tambah satu "percikan api" di posisi bola saat ini
+        coords = self.get_position()
+        cx = (coords[0] + coords[2]) / 2
+        cy = (coords[1] + coords[3]) / 2
+        r = self.radius * 0.9
+        t = self.canvas.create_oval(
+            cx - r, cy - r, cx + r, cy + r,
+            fill=self.TRAIL_COLORS[0], outline="",
+        )
+        self.canvas.tag_lower(t, self.item)  # taruh di belakang bola
+        self.trail.append([t, 0])
+
+    def fade_trail(self):
+        # kecilkan dan ubah warna percikan api seiring waktu
+        for entry in self.trail[:]:
+            entry[1] += 1
+            item, age = entry
+            if age >= len(self.TRAIL_COLORS):
+                self.canvas.delete(item)
+                self.trail.remove(entry)
+            else:
+                c = self.canvas.coords(item)
+                cx = (c[0] + c[2]) / 2
+                cy = (c[1] + c[3]) / 2
+                r = self.radius * 0.9 * (1 - age / len(self.TRAIL_COLORS))
+                self.canvas.coords(item, cx - r, cy - r, cx + r, cy + r)
+                self.canvas.itemconfig(item, fill=self.TRAIL_COLORS[age])
 
     def update(self):
         coords = self.get_position()
@@ -37,9 +100,15 @@ class Ball(GameObject):
             self.direction[0] *= -1
         if coords[1] <= 0:
             self.direction[1] *= -1
+
+        self.fade_trail()
+        self.add_trail()
+
         x = self.direction[0] * self.speed
         y = self.direction[1] * self.speed
         self.move(x, y)
+        # efek api berkedip
+        self.canvas.itemconfig(self.item, fill=random.choice(self.FLICKER))
 
     def collide(self, game_objects):
         coords = self.get_position()
